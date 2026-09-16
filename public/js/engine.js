@@ -158,6 +158,61 @@ export class Engine {
     });
   }
 
+  /**
+   * Search a position and report every improvement as it comes, for the live
+   * "engine lines" panel. Unlike analyse() this is meant to be interrupted: the
+   * returned handle's stop() halts the search and its `done` promise settles once
+   * the engine has acknowledged with bestmove, so the next search can start safely.
+   *
+   * @param {string} fen
+   * @param {{depth?: number, multipv?: number}} opts
+   * @param {(lines: Array<{multipv:number, cp:number|null, mate:number|null, pv:string[], depth:number}>, depth: number) => void} onUpdate
+   *          Scores are from the side-to-move's point of view.
+   * @returns {{stop: () => void, done: Promise<{terminal: boolean}>}}
+   */
+  analyseStream(fen, opts, onUpdate) {
+    const options = opts || {};
+    const multipv = options.multipv || 3;
+    const best = new Map();
+    let reachedDepth = 0;
+    let stopped = false;
+
+    const done = new Promise((resolve) => {
+      const handler = (line) => {
+        if (line.startsWith('info ') && line.indexOf(' pv ') !== -1) {
+          if (stopped) return;
+          const parsed = parseInfo(line);
+          if (!parsed) return;
+          const prev = best.get(parsed.multipv);
+          if (!prev || parsed.depth >= prev.depth) best.set(parsed.multipv, parsed);
+          if (parsed.depth > reachedDepth) reachedDepth = parsed.depth;
+          // Report once every slot has reached the current depth, so the panel does
+          // not flicker between a fresh first line and a stale third one.
+          const lines = Array.from(best.values()).sort((a, b) => a.multipv - b.multipv);
+          const settled = lines.filter((l) => l.depth === parsed.depth);
+          if (settled.length === lines.length) onUpdate(lines, reachedDepth);
+        } else if (line.startsWith('bestmove')) {
+          this._lineHandlers.delete(handler);
+          const bm = line.split(/\s+/)[1];
+          resolve({ terminal: !best.size && (!bm || bm === '(none)') });
+        }
+      };
+      this._lineHandlers.add(handler);
+    });
+
+    this.send('setoption name MultiPV value ' + multipv);
+    this.send('position fen ' + fen);
+    this.send('go depth ' + (options.depth || 22));
+
+    return {
+      stop: () => {
+        stopped = true;
+        this.send('stop');
+      },
+      done: done
+    };
+  }
+
   stop() {
     this.send('stop');
   }

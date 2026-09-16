@@ -160,7 +160,7 @@ try {
   check('eval bar has a value', (await evaluate('document.querySelector(".evalbar-text").textContent.length')) > 0);
 
   // The exact evaluation must be readable as text, not just inferred from the bar.
-  const evalTags = await evaluate('Array.from(document.querySelectorAll(".move-eval")).map(e => e.textContent)');
+  const evalTags = await evaluate('Array.from(document.querySelectorAll(".move-list .move-eval")).map(e => e.textContent)');
   check('every move shows a numeric evaluation',
     evalTags.length === (await evaluate('document.querySelectorAll(".move-item").length')),
     evalTags.length + ' tags');
@@ -269,12 +269,15 @@ try {
   const hasLine = await evaluate(`!!document.querySelector('.coach-line')`);
   check('at least one variation is offered', hasLine);
   if (hasLine) {
-    const before = await evaluate(`document.querySelectorAll('#board .piece').length`);
     await evaluate(`document.querySelector('.coach-line').click()`);
-    await new Promise((r) => setTimeout(r, 800));
-    check('clicking a line moves the board', await evaluate(`document.querySelectorAll('#board .piece').length > 0`),
-      String(before));
-    await new Promise((r) => setTimeout(r, 3600)); // let the preview finish and restore
+    await waitFor('!document.getElementById("variation-bar").classList.contains("hidden")', 3000, 'coach line as a variation');
+    check('clicking a line opens it as a variation on the board', true);
+    await waitFor('document.querySelectorAll("#variation-bar .variation-move.current").length === 1', 3000, 'first move of the line played');
+    check('the line plays itself out move by move', true);
+    // Leaving it must stop the autoplay dead - nothing may move the board later.
+    await evaluate('document.getElementById("btn-leave-variation").click()');
+    await new Promise((r) => setTimeout(r, 1500));
+    check('leaving the variation stops the playback', await evaluate('document.getElementById("variation-bar").classList.contains("hidden")'));
   }
 
   // The panel should stay open as you step, not need reopening every move.
@@ -294,6 +297,74 @@ try {
   const atStart = await evaluate(`document.querySelectorAll('.player-strip .cap-piece').length`);
   check('nothing is captured at the starting position', atStart === 0, String(atStart));
   await evaluate('document.getElementById("btn-last").click()');
+
+  console.log('\n6c. Label badges on the board');
+  const badge = await evaluate(`(function(){const b=document.querySelector('#board .badge'); return b ? b.className + ' ' + b.textContent : '';})()`);
+  check('the last move carries its label badge on the board', /badge \w+/.test(badge), badge);
+  const badgeSquare = await evaluate(`document.querySelector('#board .badge').closest('.sq').dataset.square`);
+  const lastTo = await evaluate(`document.querySelector('.move-item.current .sym').className`);
+  check('the badge sits on the square the move landed on', /^[a-h][1-8]$/.test(badgeSquare), badgeSquare);
+  check('badge and move list agree on the label', badge.indexOf(lastTo.replace('sym ', '')) !== -1, badge + ' vs ' + lastTo);
+
+  console.log('\n6d. Engine lines follow the board');
+  await waitFor('document.querySelectorAll("#engine-lines .engine-line").length >= 2', 90000, 'engine lines');
+  const firstLine = await evaluate('document.querySelector("#engine-lines .engine-line").innerText.replace(/\\n/g, " ")');
+  check('three lines with an evaluation and a continuation', /^[+-]?(\d+\.\d\d|M\d+) \d+\.(\.\.)? \w/.test(firstLine), firstLine);
+  check('depth is reported', /^depth \d+/.test(await evaluate('document.getElementById("engine-depth").textContent')));
+
+  console.log('\n6e. Trying moves on the board');
+  const centre = async (square) => evaluate(`(function(){const b=document.querySelector('[data-square="${square}"]').getBoundingClientRect();return {x:b.left+b.width/2,y:b.top+b.height/2};})()`);
+  const mouse = (type, x, y) => page.cdp.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 }, page.sessionId);
+  const clickSquare = async (square) => { const c = await centre(square); await mouse('mousePressed', c.x, c.y); await mouse('mouseReleased', c.x, c.y); };
+  await evaluate('document.getElementById("btn-first").click()');
+  await clickSquare('e2');
+  check('clicking a piece selects it and shows its destinations',
+    (await evaluate('document.querySelectorAll(".sq.dest").length')) === 2 && (await evaluate('document.querySelector(".sq.selected").dataset.square')) === 'e2');
+  await clickSquare('e4');
+  await waitFor('!document.getElementById("variation-bar").classList.contains("hidden")', 5000, 'variation bar');
+  // Flex items come through innerText separated by newlines, so collapse whitespace.
+  const barText = () => evaluate('document.getElementById("variation-bar").innerText.replace(/\\s+/g, " ")');
+  check('a click-move starts a variation', /1\. e4/.test(await barText()), await barText());
+  check('the piece moved on the board', await evaluate(`!!document.querySelector('[data-square="e4"] .piece') && !document.querySelector('[data-square="e2"] .piece')`));
+  check('the move list is left alone (no game move is current at the start)', (await evaluate('document.querySelectorAll(".move-item.current").length')) === 0);
+  // Flex items come through innerText with newlines, so the helper collapses them.
+  const firstEngineLine = String.raw`document.querySelector("#engine-lines .engine-line").innerText.replace(/\s+/g, " ")`;
+  await waitFor(String.raw`document.getElementById("engine-depth").textContent.startsWith("depth") && /^[^ ]+ 1\.\.\. /.test(` + firstEngineLine + ')', 90000, 'lines for the variation');
+  check('engine lines now analyse the variation position (Black to move)', true);
+  check('the eval bar follows the variation', (await evaluate('document.querySelector(".evalbar-text").textContent.length')) > 0);
+  check('the commentary card explains it is a variation', /variation/i.test(await evaluate('document.getElementById("move-note").innerText')));
+
+  // Drag a piece: pointer down, several moves, release on the target.
+  const from = await centre('e7');
+  const to = await centre('e5');
+  await mouse('mousePressed', from.x, from.y);
+  for (let i = 1; i <= 4; i++) await page.cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: from.x + (to.x - from.x) * i / 4, y: from.y + (to.y - from.y) * i / 4, button: 'left' }, page.sessionId);
+  await mouse('mouseReleased', to.x, to.y);
+  try {
+    await waitFor('/1\\. e4 e5/.test(document.getElementById("variation-bar").innerText.replace(/\\s+/g, " "))', 5000, 'dragged move');
+  } catch (err) {
+    console.log('     drag debug: from', JSON.stringify(from), 'to', JSON.stringify(to), 'scrollY', await evaluate('window.scrollY'),
+      'atFrom', await evaluate(`(function(){const e=document.elementFromPoint(${from.x},${from.y}); return e ? e.className + ' ' + (e.dataset.square||'') : 'none';})()`),
+      'atTo', await evaluate(`(function(){const e=document.elementFromPoint(${to.x},${to.y}); return e ? e.className + ' ' + (e.dataset.square||'') : 'none';})()`),
+      'bar', await barText(), 'selected', await evaluate('document.querySelector(".sq.selected") ? document.querySelector(".sq.selected").dataset.square : null'));
+    throw err;
+  }
+  check('a dragged move extends the variation', true);
+
+  // A move from an engine line is playable too, once the lines are for this position.
+  await waitFor(String.raw`document.getElementById("engine-depth").textContent.startsWith("depth") && /^[^ ]+ 2\. /.test(` + firstEngineLine + ')', 90000, 'lines after 1. e4 e5');
+  await evaluate('document.querySelector("#engine-lines .engine-move").click()');
+  await waitFor('document.querySelectorAll("#variation-bar .variation-move").length === 3', 5000, 'engine move played');
+  check('clicking an engine-line move plays it', true);
+
+  // Arrow keys walk the variation; Escape leaves it.
+  await evaluate(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))`);
+  check('left arrow steps back inside the variation', (await evaluate('document.querySelector("#variation-bar .variation-move.current").textContent')) === 'e5');
+  await evaluate(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+  await waitFor('document.getElementById("variation-bar").classList.contains("hidden")', 5000, 'back to game');
+  check('Escape returns to the game position', await evaluate(`!!document.querySelector('[data-square="e2"] .piece') && document.querySelectorAll(".move-item.current").length === 0`));
+  await evaluate('document.getElementById("btn-last").click()');
+  check('the game position is intact afterwards', (await evaluate('document.querySelectorAll(".move-item.current").length')) === 1);
 
   console.log('\n7. Pasted PGN (the route for games against bots)');
   const botPgn = [

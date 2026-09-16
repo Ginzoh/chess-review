@@ -59,9 +59,25 @@ out by hand. Missing headers are fine; a bare move list still reviews.
 ## What the review gives you
 
 **Per move** — a label (Brilliant, Great, Best, Excellent, Good, Inaccuracy, Mistake,
-Blunder, Missed win, Forced), the evaluation before and after, and a sentence explaining it in board
+Blunder, Missed win, Forced), shown in the move list and as a badge on the square the
+move landed on; the evaluation before and after; and a sentence explaining it in board
 terms: what the move allowed, what the better move would have done, whether it hung a
 piece, missed free material, or walked into mate.
+
+**An analysis board, not just a replay.** The pieces move — click or drag — from any
+position, and the app follows you into the variation: a strip under the board lists the
+moves you have played, the arrow keys step through them, and *Back to game* (or Escape)
+returns you to where you branched off. Playing a move from the middle of a variation
+discards what came after it, as on Lichess. The move list keeps marking the game position
+you left from.
+
+**Engine lines** — the top three lines for whatever is on the board, with an evaluation
+and the continuation, deepening live (the panel shows the depth reached). Every move in a
+line is clickable and plays the line up to that point as a variation. This runs from the
+moment a game opens — before the full review — and the evaluation bar follows it, so you
+get an instant read on any position. The switch on the panel turns it off, and the choice
+is remembered. While a full review runs the live search pauses, since it is the same
+engine.
 
 **Played like ~1750** — an estimated rating for each side's play in that one game,
 the equivalent of Chess.com's game-review rating. Shown under each accuracy score and
@@ -147,7 +163,8 @@ coaching breakdown rather than a one-liner:
 - **Work on this** — concrete training advice tied to that concept, and a note when the
   move was played much faster than your average, since that is often the real cause.
 
-Every quoted line is clickable and plays out on the board, then restores your place.
+Every quoted line is clickable and opens on the board as a variation, playing itself out
+move by move; from there you can step through it, play on, or go back to the game.
 
 The coach never names a motif it cannot detect. Where nothing specific is found it says
 so plainly rather than inventing a theme, because a coach that guesses teaches the wrong
@@ -200,7 +217,8 @@ currently clears AA — 4.5:1 for body text, 3:1 for large. Run it after any col
 | Piece | What it does |
 | --- | --- |
 | `server.js` | Serves the front end, proxies and caches the Chess.com API, and sets the COOP/COEP headers that unlock `SharedArrayBuffer` so the multi-threaded engine can run. |
-| `public/js/engine.js` | Promise-based UCI client over the Stockfish worker. Uses the multi-threaded build when the page is cross-origin isolated, single-threaded otherwise. |
+| `public/js/engine.js` | Promise-based UCI client over the Stockfish worker. Uses the multi-threaded build when the page is cross-origin isolated, single-threaded otherwise. `analyse()` for the review, `analyseStream()` for the live lines (reports as it deepens, can be stopped). |
+| `public/js/live.js` | The live engine lines: one streaming multi-PV search following the board, serialised so searches never overlap, paused while the review runs. |
 | `public/js/analysis.js` | Searches every position once (N+1 searches for N moves), then hunts deeper for forced mates where a side is clearly winning; converts scores to expected-score loss, classifies each move (incl. Missed win), computes calibrated accuracy and phases. |
 | `public/js/insights.js` | Turns that into English — the per-move explanations and the whole-game review. |
 | `public/js/chessutils.js` | Static exchange evaluation, material counting, fork/hanging-piece detection: the board facts the sentences are built from. |
@@ -208,7 +226,7 @@ currently clears AA — 4.5:1 for body text, 3:1 for large. Run it after any col
 | `public/js/rating.js` | The "played like" estimate: accuracy-by-rating curves inverted, and the rules for when not to guess. |
 | `public/js/concepts.js` | Pattern detection (pins, skewers, back rank, trapped pieces, overloads, development) and the catalogue of concepts with training advice. |
 | `public/js/coach.js` | Builds the Explain breakdown: what happened, the concept, the better move, what to work on. |
-| `public/js/board.js` | Board rendering, the best-move arrow, and the sliding-piece animation (worked out by diffing the two positions, so castling, en passant and promotion all animate, forwards and backwards). |
+| `public/js/board.js` | Board rendering, the best-move arrow, label badges, click-and-drag move input with legal-move dots, and the sliding-piece animation (worked out by diffing the two positions, so castling, en passant and promotion all animate, forwards and backwards). |
 | `public/js/app.js` | Routing, UI, board themes, and the captured-material strip. |
 
 Accuracy uses the logistic expected-score model with a centipawn floor — see *What the

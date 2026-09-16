@@ -11,6 +11,7 @@ import { Chess } from './chessutils.js';
 import { estimateRating, ratingTooltip, unavailableReason } from './rating.js';
 import { coachMove } from './coach.js';
 import { STATIC_HOST } from './config.js';
+import { LiveAnalysis, numberedLine } from './live.js';
 
 const view = document.getElementById('view');
 const engineBadge = document.getElementById('engine-badge');
@@ -32,8 +33,24 @@ const state = {
   startFen: null,
   history: [],
   pgnSource: null,
-  coachOpen: false
+  coachOpen: false,
+  // A variation the user is trying out from the current game position: the moves
+  // played so far and which of them is on the board (-1 = the game position).
+  line: null,
+  // Live engine lines for whatever position is on the board.
+  live: null,
+  liveResult: null
 };
+
+const LIVE_PREF_KEY = 'chess-review-live';
+
+function livePreferred() {
+  try {
+    return localStorage.getItem(LIVE_PREF_KEY) !== 'off';
+  } catch (e) {
+    return true;
+  }
+}
 
 /* ------------------------------------------------------------- routing -- */
 
@@ -79,6 +96,11 @@ function loadPgnGames() {
 async function route() {
   const r = parseHash();
   document.getElementById('search-input').value = r.username || '';
+  if (state.live) {
+    // Whatever page comes next, the engine should not keep thinking about the last one.
+    state.live.set(null);
+    state.line = null;
+  }
   try {
     if (r.name === 'home') return renderHome();
     if (r.name === 'player') return await renderPlayer(r.username, r.year, r.month);
@@ -552,6 +574,13 @@ function openGame(game, backHref) {
   state.board.setOrientation(state.perspective);
   applyBoardTheme(currentBoardTheme());
   renderBoardThemePicker(document.getElementById('board-themes'));
+  state.board.enableMoves({ dests: legalDestinations, onMove: playUserMove });
+
+  state.line = null;
+  state.liveResult = null;
+  if (!state.live) state.live = new LiveAnalysis(engine, onLiveUpdate);
+  state.live.setEnabled(livePreferred());
+  renderEnginePanel();
 
   renderGameHead();
   renderMoveList();
@@ -559,8 +588,8 @@ function openGame(game, backHref) {
   goTo(state.history.length - 1, { instant: true }); // opening a game should not replay the last move
 
   document.getElementById('btn-first').onclick = () => goTo(-1);
-  document.getElementById('btn-prev').onclick = () => goTo(state.cursor - 1);
-  document.getElementById('btn-next').onclick = () => goTo(state.cursor + 1);
+  document.getElementById('btn-prev').onclick = stepBack;
+  document.getElementById('btn-next').onclick = stepForward;
   document.getElementById('btn-last').onclick = () => goTo(state.history.length - 1);
   document.getElementById('btn-flip').onclick = () => {
     state.board.flip();
@@ -616,8 +645,7 @@ function fillStrip(root, player, color) {
   root.querySelector('.elo').textContent = player.rating ? player.rating : '';
 
   // What this player has taken off the board, at the position on screen.
-  const move = state.cursor >= 0 ? state.history[state.cursor] : null;
-  renderCaptured(root.querySelector('.captured'), move ? move.after : state.startFen, color);
+  renderCaptured(root.querySelector('.captured'), displayedFen(), color);
 
   const acc = root.querySelector('.acc');
   if (state.analysis) {
@@ -667,11 +695,32 @@ function formatClock(seconds) {
 
 /* ------------------------------------------------------- move display -- */
 
+/** The position on the board right now: the variation being tried, or the game. */
+function displayedFen() {
+  if (state.line) return state.line.index >= 0 ? state.line.moves[state.line.index].fen : baseFenOfLine();
+  return state.cursor >= 0 ? state.history[state.cursor].after : state.startFen;
+}
+
+/** The game position the current variation branched from. */
+function baseFenOfLine() {
+  const base = state.line ? state.line.baseCursor : state.cursor;
+  return base >= 0 ? state.history[base].after : state.startFen;
+}
+
+/** Where the piece on `square` may legally go in the displayed position. */
+function legalDestinations(square) {
+  const chess = new Chess(displayedFen());
+  return chess.moves({ square: square, verbose: true }).map((m) => m.to);
+}
+
 function goTo(index, opts0) {
   const settings = opts0 || {};
   const previous = state.cursor;
   const max = state.history.length - 1;
   state.cursor = Math.max(-1, Math.min(max, index));
+  const wasExploring = !!state.line;
+  cancelAutoplay();
+  state.line = null;
 
   const move = state.cursor >= 0 ? state.history[state.cursor] : null;
   const fen = move ? move.after : state.startFen;
@@ -696,18 +745,298 @@ function goTo(index, opts0) {
     }
   }
 
-  // Show the engine's preferred move as an arrow whenever the played move wasn't it.
+  // Show the engine's preferred move as an arrow whenever the played move wasn't it,
+  // and the move's label on the square it landed on.
   const analysed = state.analysis && state.cursor >= 0 ? state.analysis.moves[state.cursor] : null;
   if (analysed && !analysed.isBest && analysed.bestUci) {
     opts.arrow = { from: analysed.bestUci.slice(0, 2), to: analysed.bestUci.slice(2, 4), kind: 'best' };
   }
+  if (analysed) {
+    opts.badge = { square: move.to, key: analysed.label.key, symbol: analysed.label.symbol, title: analysed.label.text };
+  }
 
-  opts.animate = animate;
+  opts.animate = animate || wasExploring;
   state.board.setPosition(fen, opts);
+  state.liveResult = null;
+  if (state.live) state.live.set(fen);
   updateEvalBar(analysed);
   updateMoveNote(analysed);
+  renderVariationBar();
   highlightCurrentMove();
   renderPlayerStrips();
+}
+
+/* ----------------------------------------------------------- variations -- */
+
+/** The user moved a piece: branch off the displayed position and follow it. */
+function playUserMove(from, to) {
+  const chess = new Chess(displayedFen());
+  let made = null;
+  try {
+    // Promotion always makes a queen; the other choices are rare enough in
+    // analysis that a picker would be more in the way than useful.
+    made = chess.move({ from: from, to: to, promotion: 'q' });
+  } catch (e) {
+    made = null;
+  }
+  if (!made) return;
+
+  cancelAutoplay();
+  if (!state.line) state.line = { baseCursor: state.cursor, moves: [], index: -1 };
+  // Playing from the middle of a variation discards what came after.
+  state.line.moves = state.line.moves.slice(0, state.line.index + 1);
+  state.line.moves.push({ san: made.san, from: made.from, to: made.to, fen: chess.fen() });
+  state.line.index = state.line.moves.length - 1;
+  showVariation({ animate: true });
+}
+
+/** Put a variation move (or the base position, index -1) on the board. */
+function showVariation(opts0) {
+  const settings = opts0 || {};
+  const line = state.line;
+  if (!line) return;
+  const step = line.index >= 0 ? line.moves[line.index] : null;
+  const fen = displayedFen();
+
+  const chess = new Chess(fen);
+  const opts = { lastMove: step ? { from: step.from, to: step.to } : null, animate: settings.animate !== false };
+  if (chess.isCheck()) {
+    const kingColor = chess.turn();
+    for (const row of chess.board()) {
+      for (const sq of row) {
+        if (sq && sq.type === 'k' && sq.color === kingColor) opts.check = sq.square;
+      }
+    }
+  }
+  state.board.setPosition(fen, opts);
+  state.liveResult = null;
+  if (state.live) state.live.set(fen);
+  updateEvalBar(null);
+  updateVariationNote();
+  renderVariationBar();
+  renderPlayerStrips();
+}
+
+/** Play the first `count` moves of an engine line as a variation. */
+function playEngineLine(fromFen, sans, count) {
+  // The panel may still show lines for the previous position for a moment.
+  if (fromFen !== displayedFen()) return;
+  const chess = new Chess(fromFen);
+  const steps = [];
+  for (let i = 0; i < count && i < sans.length; i++) {
+    let made = null;
+    try {
+      made = chess.move(sans[i]);
+    } catch (e) {
+      made = null;
+    }
+    if (!made) break;
+    steps.push({ san: made.san, from: made.from, to: made.to, fen: chess.fen() });
+  }
+  if (!steps.length) return;
+  cancelAutoplay();
+  if (!state.line) state.line = { baseCursor: state.cursor, moves: [], index: -1 };
+  state.line.moves = state.line.moves.slice(0, state.line.index + 1).concat(steps);
+  state.line.index = state.line.moves.length - 1;
+  showVariation({ animate: true });
+}
+
+/** Back to the game position this variation branched from. */
+function leaveVariation() {
+  if (!state.line) return;
+  goTo(state.cursor);
+}
+
+function stepBack() {
+  if (state.line) {
+    cancelAutoplay();
+    if (state.line.index < 0) return leaveVariation();
+    state.line.index--;
+    showVariation();
+    return;
+  }
+  goTo(state.cursor - 1);
+}
+
+function stepForward() {
+  if (state.line) {
+    cancelAutoplay();
+    if (state.line.index >= state.line.moves.length - 1) return;
+    state.line.index++;
+    showVariation();
+    return;
+  }
+  goTo(state.cursor + 1);
+}
+
+/** The strip under the board listing the variation's moves, with a way home. */
+function renderVariationBar() {
+  const bar = document.getElementById('variation-bar');
+  if (!bar) return;
+  const line = state.line;
+  if (!line) {
+    bar.classList.add('hidden');
+    bar.innerHTML = '';
+    return;
+  }
+  bar.classList.remove('hidden');
+  bar.innerHTML = '<span class="variation-tag">Variation</span><span class="variation-moves"></span>' +
+    '<button type="button" class="variation-back" id="btn-leave-variation">↩ Back to game</button>';
+
+  const parts = baseFenOfLine().split(' ');
+  let moveNumber = Number(parts[5]) || 1;
+  let white = parts[1] !== 'b';
+  const holder = bar.querySelector('.variation-moves');
+  line.moves.forEach((step, i) => {
+    if (white || i === 0) {
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = moveNumber + (white ? '.' : '...');
+      holder.appendChild(num);
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'variation-move' + (i === line.index ? ' current' : '');
+    btn.textContent = step.san;
+    btn.addEventListener('click', () => {
+      cancelAutoplay();
+      state.line.index = i;
+      showVariation();
+    });
+    holder.appendChild(btn);
+    if (!white) moveNumber++;
+    white = !white;
+  });
+  document.getElementById('btn-leave-variation').addEventListener('click', leaveVariation);
+}
+
+/** The commentary card while exploring: the live verdict on the position. */
+function updateVariationNote() {
+  const note = document.getElementById('move-note');
+  const line = state.line;
+  if (!line) return;
+  const step = line.index >= 0 ? line.moves[line.index] : null;
+  note.innerHTML = '<div class="note-head"><span class="note-move"></span><span class="muted note-label">Your variation</span></div>' +
+    '<div class="note-text muted"></div>';
+  note.querySelector('.note-move').textContent = step ? numberedLine(line.index > 0 ? line.moves[line.index - 1].fen : baseFenOfLine(), [step.san]) : 'Game position';
+  const result = state.liveResult;
+  const text = note.querySelector('.note-text');
+  if (result && result.terminal) {
+    text.textContent = result.terminal === 'checkmate' ? 'Checkmate.' : 'The game is over — a draw.';
+  } else if (result && result.lines.length) {
+    const best = result.lines[0];
+    text.textContent = 'The engine suggests ' + best.san[0] + ' here (depth ' + result.depth + '). Keep moving pieces to explore, or go back to the game.';
+    note.querySelector('.note-head').appendChild(buildEvalReadout(best.whiteCp));
+  } else {
+    text.textContent = state.live && state.live.enabled ? 'Thinking…' : 'Engine lines are off — turn them on to see what the engine makes of this.';
+  }
+}
+
+/* --------------------------------------------------------- engine lines -- */
+
+function onLiveUpdate(result) {
+  state.liveResult = result;
+  renderEngineLines();
+  if (state.line) {
+    updateVariationNote();
+    updateEvalBar(null);
+    // In a variation the arrow follows the engine's current first choice.
+    const best = result && result.lines.length ? result.lines[0].first : null;
+    state.board.setArrow(best ? { from: best.from, to: best.to, kind: 'best' } : null);
+  } else {
+    const analysed = state.analysis && state.cursor >= 0 ? state.analysis.moves[state.cursor] : null;
+    updateEvalBar(analysed);
+    if (!state.analysis) {
+      const best = result && result.lines.length ? result.lines[0].first : null;
+      state.board.setArrow(best ? { from: best.from, to: best.to, kind: 'best' } : null);
+    }
+  }
+}
+
+function renderEnginePanel() {
+  const card = document.getElementById('engine-card');
+  if (!card) return;
+  card.innerHTML =
+    '<div class="engine-head"><h3>Engine lines</h3><span class="engine-depth muted" id="engine-depth"></span>' +
+    '<label class="switch" title="Analyse the position on the board as you browse">' +
+    '<input type="checkbox" id="live-toggle"><span></span></label></div>' +
+    '<ol class="engine-lines" id="engine-lines"></ol>';
+  const toggle = document.getElementById('live-toggle');
+  toggle.checked = livePreferred();
+  toggle.addEventListener('change', () => {
+    try {
+      localStorage.setItem(LIVE_PREF_KEY, toggle.checked ? 'on' : 'off');
+    } catch (e) {
+      /* preference just will not stick */
+    }
+    state.live.setEnabled(toggle.checked);
+    renderEngineLines();
+  });
+  renderEngineLines();
+}
+
+function renderEngineLines() {
+  const list = document.getElementById('engine-lines');
+  const depthEl = document.getElementById('engine-depth');
+  if (!list) return;
+  list.innerHTML = '';
+  const result = state.liveResult;
+  const live = state.live;
+
+  if (!live || !live.enabled) {
+    depthEl.textContent = 'off';
+    return;
+  }
+  if (live.paused) {
+    depthEl.textContent = 'paused while the review runs';
+    return;
+  }
+  if (result && result.terminal) {
+    depthEl.textContent = '';
+    list.innerHTML = '<li class="muted">' + (result.terminal === 'checkmate' ? 'Checkmate' : 'Game over — draw') + '</li>';
+    return;
+  }
+  if (!result || !result.lines.length) {
+    depthEl.textContent = 'thinking…';
+    return;
+  }
+  depthEl.textContent = 'depth ' + result.depth;
+
+  for (const line of result.lines) {
+    const li = document.createElement('li');
+    li.className = 'engine-line';
+
+    const score = document.createElement('span');
+    score.className = 'move-eval ' + (line.whiteCp > 30 ? 'white-ahead' : line.whiteCp < -30 ? 'black-ahead' : 'level');
+    score.textContent = line.mate !== null ? (line.mate > 0 ? 'M' + line.mate : '-M' + Math.abs(line.mate)) : formatCp(line.whiteCp);
+    li.appendChild(score);
+
+    // Every move in the line is clickable: it plays the line that far.
+    const moves = document.createElement('span');
+    moves.className = 'engine-moves';
+    const parts = result.fen.split(' ');
+    let moveNumber = Number(parts[5]) || 1;
+    let white = parts[1] !== 'b';
+    line.san.slice(0, 10).forEach((san, i) => {
+      if (white || i === 0) {
+        const num = document.createElement('span');
+        num.className = 'num';
+        num.textContent = moveNumber + (white ? '.' : '...');
+        moves.appendChild(num);
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'engine-move';
+      btn.textContent = san;
+      btn.title = 'Play the line up to here';
+      btn.addEventListener('click', () => playEngineLine(result.fen, line.san, i + 1));
+      moves.appendChild(btn);
+      if (!white) moveNumber++;
+      white = !white;
+    });
+    li.appendChild(moves);
+    list.appendChild(li);
+  }
 }
 
 function updateEvalBar(move) {
@@ -715,17 +1044,27 @@ function updateEvalBar(move) {
   const fill = bar.querySelector('.evalbar-fill');
   const text = bar.querySelector('.evalbar-text');
 
-  if (!state.analysis) {
+  // The live search knows the position on the board, whatever it is; the review
+  // only knows the game's own moves.
+  const live = state.liveResult && state.liveResult.fen === displayedFen() ? state.liveResult : null;
+  let whiteCp = null;
+  if (live && live.terminal) {
+    whiteCp = live.terminal === 'checkmate' ? (new Chess(live.fen).turn() === 'w' ? -10000 : 10000) : 0;
+  } else if (live && live.lines.length) {
+    whiteCp = live.lines[0].whiteCp;
+  } else if (state.analysis && !state.line) {
+    const source = move || state.analysis.moves[0];
+    whiteCp = move
+      ? (move.color === 'w' ? move.evalAfterCp : -move.evalAfterCp)
+      : (source.color === 'w' ? source.evalBeforeCp : -source.evalBeforeCp);
+  }
+
+  if (whiteCp === null) {
     fill.style.height = '50%';
     text.textContent = '';
     bar.classList.remove('negative');
     return;
   }
-
-  const source = move || state.analysis.moves[0];
-  const whiteCp = move
-    ? (move.color === 'w' ? move.evalAfterCp : -move.evalAfterCp)
-    : (source.color === 'w' ? source.evalBeforeCp : -source.evalBeforeCp);
 
   const clamped = Math.max(-1000, Math.min(1000, whiteCp));
   const percent = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * clamped)) - 1);
@@ -764,7 +1103,10 @@ function buildEvalReadout(whiteCp) {
 
 function updateMoveNote(move) {
   const note = document.getElementById('move-note');
-  if (!state.analysis) return;
+  if (!state.analysis) {
+    note.innerHTML = '<p class="muted">Run the review for move-by-move commentary. You can already move the pieces to try ideas — the engine lines follow the board.</p>';
+    return;
+  }
 
   if (!move) {
     note.innerHTML = '<p class="muted">Starting position. Use ← and → to step through the game.</p>';
@@ -901,35 +1243,49 @@ function renderCoachPanel(root, move) {
 }
 
 /**
- * Step a quoted variation onto the board so it can be watched rather than read.
- * The move list stays where it is - this is a preview, not navigation.
+ * Put a quoted line on the board as a variation and play it out move by move, so
+ * it can be watched rather than read. It stays there afterwards: step through it,
+ * play on from it, or go back to the game. The line starts from `fromFen`, which
+ * for a "better was" line is the position *before* the move under review.
  */
 function playVariation(fromFen, variation) {
   if (!fromFen || !variation) return;
   const sans = variation.replace(/\d+\.(\.\.)?/g, ' ').trim().split(/\s+/).filter(Boolean);
-  const board = new Chess(fromFen);
-  const steps = [{ fen: fromFen, move: null }];
-  for (const san of sans) {
-    try {
-      const made = board.move(san);
-      if (!made) break;
-      steps.push({ fen: board.fen(), move: { from: made.from, to: made.to } });
-    } catch (e) {
-      break;
-    }
-  }
-  if (steps.length < 2) return;
 
-  clearTimeout(state.variationTimer);
-  let i = 0;
+  // Which game position is this line branching from?
+  let baseCursor = fromFen === state.startFen ? -1 : state.history.findIndex((m) => m.after === fromFen);
+  if (baseCursor === -1 && fromFen !== state.startFen) return;
+
+  const board = new Chess(fromFen);
+  const steps = [];
+  for (const san of sans) {
+    let made = null;
+    try {
+      made = board.move(san);
+    } catch (e) {
+      made = null;
+    }
+    if (!made) break;
+    steps.push({ san: made.san, from: made.from, to: made.to, fen: board.fen() });
+  }
+  if (!steps.length) return;
+
+  cancelAutoplay();
+  state.line = { baseCursor: baseCursor, moves: steps, index: -1 };
+  showVariation({ animate: false });
   const tick = () => {
-    const step = steps[i];
-    state.board.setPosition(step.fen, { lastMove: step.move, animate: i > 0 });
-    i++;
-    if (i < steps.length) state.variationTimer = setTimeout(tick, 620);
-    else state.variationTimer = setTimeout(() => goTo(state.cursor, { instant: true }), 1400);
+    if (!state.line || state.line.index >= state.line.moves.length - 1) return;
+    state.line.index++;
+    showVariation({ animate: true });
+    state.variationTimer = setTimeout(tick, 620);
   };
-  tick();
+  state.variationTimer = setTimeout(tick, 250);
+}
+
+/** Any deliberate move or navigation stops a line that is playing itself out. */
+function cancelAutoplay() {
+  clearTimeout(state.variationTimer);
+  state.variationTimer = null;
 }
 
 /* ------------------------------------------------------------ analysis -- */
@@ -950,6 +1306,11 @@ async function runAnalysis() {
   try {
     engineBadge.textContent = 'Engine loading…';
     await engine.boot();
+    if (state.live) {
+      // One worker: wait until the live search has actually stopped.
+      await state.live.pause();
+      renderEngineLines();
+    }
     engineBadge.textContent = 'Stockfish 18 · ' + (engine.isMultithreaded ? engine.threads + ' threads' : 'single thread');
     engineBadge.classList.add('on');
 
@@ -975,8 +1336,10 @@ async function runAnalysis() {
     renderGraph();
     renderPerspectiveToggle();
     renderReview();
+    if (state.live) state.live.resume();
     goTo(state.cursor);
   } catch (err) {
+    if (state.live) state.live.resume();
     progress.classList.add('hidden');
     button.disabled = false;
     document.getElementById('depth-select').disabled = false;
@@ -1265,8 +1628,9 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
 
 document.addEventListener('keydown', (e) => {
   if (!state.board || e.target.matches('input, select, textarea')) return;
-  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(state.cursor - 1); }
-  else if (e.key === 'ArrowRight') { e.preventDefault(); goTo(state.cursor + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); stepBack(); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); stepForward(); }
+  else if (e.key === 'Escape' && state.line) { e.preventDefault(); leaveVariation(); }
   else if (e.key === 'Home') { e.preventDefault(); goTo(-1); }
   else if (e.key === 'End') { e.preventDefault(); goTo(state.history.length - 1); }
   else if (e.key === 'f' || e.key === 'F') { state.board.flip(); renderPlayerStrips(); }

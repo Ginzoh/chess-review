@@ -606,3 +606,86 @@ main { padding: 26px 22px 60px; max-width: 1360px; margin: 0 auto; }
   background: var(--bg-raised); border: 1px solid var(--inaccuracy);
   box-shadow: var(--shadow); font-size: 13.5px; max-width: min(92vw, 640px);
 }
+
+/* ------------------------------------------------------ interactive board -- */
+
+/* Trying moves: the selected piece, where it can go, and the drop target. */
+.board.movable .sq { cursor: pointer; touch-action: none; }
+.sq.selected { box-shadow: inset 0 0 0 100px rgba(255, 209, 102, .55); }
+.sq.dest::after {
+  content: ''; position: absolute; width: 26%; height: 26%; border-radius: 50%;
+  background: rgba(20, 24, 30, .28); z-index: 1;
+}
+.sq.dest-capture::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  border: 6px solid rgba(20, 24, 30, .28); box-sizing: border-box; z-index: 1;
+}
+.sq.drag-over { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, .55); }
+.piece.dragging { z-index: 8; transition: none !important; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .45)); pointer-events: none; }
+
+/* The move's label, on the square it landed on. */
+.badge {
+  position: absolute; top: 1px; right: 1px; z-index: 4;
+  min-width: 26px; height: 26px; padding: 0 6px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; line-height: 1; color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45), 0 0 0 2px rgba(255, 255, 255, .85);
+  pointer-events: none;
+}
+.badge.brilliant { background: var(--brilliant); color: #10221d; }
+.badge.great { background: var(--great); }
+.badge.best { background: var(--best); color: #16240c; }
+.badge.excellent { background: var(--excellent); color: #16240c; }
+.badge.good { background: var(--good); color: #141a20; }
+.badge.missedWin { background: var(--missedWin); color: #2b160e; }
+.badge.inaccuracy { background: var(--inaccuracy); color: #2b230c; }
+.badge.mistake { background: var(--mistake); color: #2b170a; }
+.badge.blunder { background: var(--blunder); }
+.badge.forced { background: var(--forced); }
+@media (max-width: 560px) { .badge { min-width: 18px; height: 18px; font-size: 10px; padding: 0 4px; } }
+
+/* The variation strip under the board. */
+.variation-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 12px; padding: 8px 10px;
+  border-radius: var(--radius-sm); border: 1px solid var(--line);
+  background: var(--bg-sunken); font-size: 14px;
+}
+.variation-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--accent); }
+.variation-moves { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; flex: 1; }
+.variation-moves .num, .engine-moves .num { color: var(--text-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+.variation-move, .engine-move {
+  background: none; border: 0; padding: 2px 5px; border-radius: 5px;
+  color: var(--text); font: inherit; font-size: 14px; cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.variation-move:hover, .engine-move:hover { background: var(--bg-hover); }
+.variation-move.current { background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent-dim); }
+.variation-back {
+  margin-left: auto; padding: 5px 10px; font-size: 13px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg-raised); color: var(--text); cursor: pointer;
+}
+.variation-back:hover { background: var(--bg-hover); }
+
+/* Engine lines panel. */
+.engine-card { padding: 12px 14px; }
+.engine-head { display: flex; align-items: center; gap: 10px; }
+.engine-head h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-faint); }
+.engine-depth { font-size: 12px; margin-left: 2px; }
+.engine-head .switch { margin-left: auto; }
+.switch { position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch span {
+  position: absolute; inset: 0; border-radius: 20px; background: var(--line);
+  transition: background .15s;
+}
+.switch span::before {
+  content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; border-radius: 50%;
+  background: #fff; transition: transform .15s;
+}
+.switch input:checked + span { background: var(--accent); }
+.switch input:checked + span::before { transform: translateX(16px); }
+.switch input:focus-visible + span { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.engine-lines { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-height: 26px; }
+.engine-line { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; }
+.engine-line .move-eval { margin-left: 0; margin-top: 3px; min-width: 44px; text-align: center; font-size: 12px; flex: 0 0 auto; }
+.engine-moves { display: flex; flex-wrap: wrap; align-items: center; gap: 1px 3px; }

@@ -1,6 +1,7 @@
 /**
  * Board rendering: an 8x8 grid of squares, vector pieces drawn from an SVG
- * sprite, and an SVG overlay for the "play this instead" arrow.
+ * sprite, an SVG overlay for the "play this instead" arrow, a label badge on the
+ * square a move landed on, and click-or-drag input for trying moves out.
  */
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -139,7 +140,139 @@ export class Board {
     this.root.appendChild(this.grid);
     this.root.appendChild(this.overlay);
 
+    // Input: set by enableMoves(). `dests(square)` lists where the piece on a
+    // square may go; `onMove(from, to)` is called with a legal pair.
+    this._input = null;
+    this._selected = null;
+    this._drag = null;
+    this._bindInput();
+
     this._buildSquares();
+  }
+
+  /* ------------------------------------------------------------ input -- */
+
+  /**
+   * Let the user move pieces. Pass null to make the board static again.
+   * @param {{dests: (square: string) => string[], onMove: (from: string, to: string) => void} | null} input
+   */
+  enableMoves(input) {
+    this._input = input;
+    this._select(null);
+    this.root.classList.toggle('movable', !!input);
+  }
+
+  _bindInput() {
+    this.grid.addEventListener('pointerdown', (e) => this._onPointerDown(e));
+    this.grid.addEventListener('pointermove', (e) => this._onPointerMove(e));
+    this.grid.addEventListener('pointerup', (e) => this._onPointerUp(e));
+    this.grid.addEventListener('pointercancel', () => this._endDrag(false));
+  }
+
+  _squareAt(clientX, clientY) {
+    const rect = this.grid.getBoundingClientRect();
+    const col = Math.floor(((clientX - rect.left) / rect.width) * 8);
+    const row = Math.floor(((clientY - rect.top) / rect.height) * 8);
+    if (col < 0 || col > 7 || row < 0 || row > 7) return null;
+    const file = this.flipped ? FILES[7 - col] : FILES[col];
+    const rank = this.flipped ? row + 1 : 8 - row;
+    return file + rank;
+  }
+
+  _onPointerDown(e) {
+    if (!this._input || e.button !== 0) return;
+    const square = this._squareAt(e.clientX, e.clientY);
+    if (!square) return;
+
+    // Second click of a click-to-move pair.
+    if (this._selected && this._selected !== square) {
+      if (this._input.dests(this._selected).includes(square)) {
+        const from = this._selected;
+        this._select(null);
+        this._input.onMove(from, square);
+        return;
+      }
+    }
+
+    const dests = this._input.dests(square);
+    if (!dests.length) {
+      this._select(null);
+      return;
+    }
+    this._select(square);
+
+    // Start a drag from the piece; it follows the pointer until release.
+    const piece = this.squares.get(square).querySelector('.piece:not(.ghost)');
+    if (!piece) return;
+    e.preventDefault();
+    this._finishAnimation();
+    this._drag = { from: square, piece: piece, startX: e.clientX, startY: e.clientY, moved: false, over: null, pointerId: e.pointerId };
+    this.grid.setPointerCapture(e.pointerId);
+  }
+
+  _onPointerMove(e) {
+    const drag = this._drag;
+    if (!drag) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true;
+    drag.piece.classList.add('dragging');
+    drag.piece.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+    const over = this._squareAt(e.clientX, e.clientY);
+    if (over !== drag.over) {
+      if (drag.over) this.squares.get(drag.over).classList.remove('drag-over');
+      drag.over = over;
+      if (over) this.squares.get(over).classList.add('drag-over');
+    }
+  }
+
+  _onPointerUp(e) {
+    const drag = this._drag;
+    if (!drag) return;
+    if (!drag.moved) {
+      // A plain click: leave the piece selected and wait for the destination.
+      this._endDrag(false);
+      return;
+    }
+    const to = this._squareAt(e.clientX, e.clientY);
+    const legal = !!to && to !== drag.from && this._input && this._input.dests(drag.from).includes(to);
+    const from = drag.from;
+    this._endDrag(legal);
+    if (legal) {
+      this._select(null);
+      this._input.onMove(from, to);
+    }
+  }
+
+  _endDrag(dropped) {
+    const drag = this._drag;
+    if (!drag) return;
+    this._drag = null;
+    if (drag.over) this.squares.get(drag.over).classList.remove('drag-over');
+    try {
+      this.grid.releasePointerCapture(drag.pointerId);
+    } catch (err) {
+      /* already released */
+    }
+    drag.piece.classList.remove('dragging');
+    // On a legal drop the caller re-renders the position; otherwise snap back.
+    if (!dropped) drag.piece.style.transform = '';
+  }
+
+  /** Highlight the selected square and dot every square its piece can reach. */
+  _select(square) {
+    for (const el of this.squares.values()) {
+      el.classList.remove('selected', 'dest', 'dest-capture');
+    }
+    this._selected = square;
+    if (!square || !this._input) return;
+    this.squares.get(square).classList.add('selected');
+    for (const to of this._input.dests(square)) {
+      const el = this.squares.get(to);
+      if (!el) continue;
+      el.classList.add(el.querySelector('.piece:not(.ghost)') ? 'dest-capture' : 'dest');
+    }
   }
 
   _buildSquares() {
@@ -193,21 +326,25 @@ export class Board {
 
   /**
    * @param {string} fen
-   * @param {{lastMove?:{from:string,to:string}, arrow?:{from:string,to:string,kind?:string}, check?:string}} opts
+   * @param {{lastMove?:{from:string,to:string}, arrow?:{from:string,to:string,kind?:string}, check?:string,
+   *          badge?:{square:string, key:string, symbol:string, title?:string}}} opts
    */
   setPosition(fen, opts) {
     const options = opts || {};
     const previousFen = this._last ? this._last.fen : null;
 
-    // Any animation still running belongs to a position we are about to replace.
+    // Any animation still running belongs to a position we are about to replace,
+    // and so does any half-made move.
     this._finishAnimation();
+    this._endDrag(false);
+    this._select(null);
 
     // Store without the animate flag so a later flip() replays this position statically.
     this._last = { fen: fen, opts: Object.assign({}, options, { animate: false }) };
 
     for (const el of this.squares.values()) {
       el.classList.remove('from', 'to', 'in-check');
-      for (const piece of Array.from(el.querySelectorAll('.piece'))) piece.remove();
+      for (const piece of Array.from(el.querySelectorAll('.piece, .badge'))) piece.remove();
     }
 
     for (const [square, ch] of piecesFromFen(fen)) {
@@ -231,6 +368,24 @@ export class Board {
     }
 
     this._drawArrow(options.arrow);
+    if (options.badge) this._drawBadge(options.badge);
+  }
+
+  /** Replace the arrow without touching anything else on the board. */
+  setArrow(arrow) {
+    this._drawArrow(arrow);
+    if (this._last) this._last.opts.arrow = arrow;
+  }
+
+  /** The move's label, pinned to the corner of the square it landed on. */
+  _drawBadge(badge) {
+    const el = this.squares.get(badge.square);
+    if (!el) return;
+    const node = document.createElement('span');
+    node.className = 'badge ' + badge.key;
+    node.textContent = badge.symbol;
+    if (badge.title) node.title = badge.title;
+    el.appendChild(node);
   }
 
   /**
