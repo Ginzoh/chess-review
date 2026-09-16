@@ -427,7 +427,24 @@ main { padding: 26px 22px 60px; max-width: 1360px; margin: 0 auto; }
 
 /* -------------------------------------------------------- side column -- */
 
-.side-column { display: flex; flex-direction: column; gap: 16px; }
+/* The side column scrolls on its own, so the board never leaves the screen. */
+.side-column {
+  display: flex; flex-direction: column; gap: 16px;
+  position: sticky; top: 76px;
+  max-height: calc(100vh - 92px); overflow-y: auto;
+  padding-right: 2px;
+}
+@media (max-width: 1050px) { .side-column { position: static; max-height: none; overflow: visible; } }
+
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex: 0 0 auto; position: sticky; top: 0; z-index: 2; background: var(--bg); }
+.tab {
+  background: none; border: 0; padding: 9px 16px; margin-bottom: -1px;
+  color: var(--text-dim); font: inherit; font-weight: 600; font-size: 14px; cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.tab:hover { color: var(--text); }
+.tab.on { color: var(--text); border-bottom-color: var(--accent); }
+.tab-panel { display: flex; flex-direction: column; gap: 16px; }
 
 .game-head .title { font-size: 17px; font-weight: 650; }
 .game-head .meta { color: var(--text-faint); font-size: 13px; margin-top: 3px; }
@@ -482,7 +499,7 @@ main { padding: 26px 22px 60px; max-width: 1360px; margin: 0 auto; }
 .perspective button { padding: 4px 10px; font-size: 12px; }
 .perspective button.on { background: var(--accent); border-color: var(--accent); color: #0e2413; font-weight: 650; }
 
-.move-list { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; display: grid; grid-template-columns: 42px 1fr 1fr; gap: 2px 6px; align-content: start; }
+.move-list { list-style: none; margin: 0; padding: 0; position: relative; max-height: min(520px, 52vh); overflow-y: auto; display: grid; grid-template-columns: 42px 1fr 1fr; gap: 2px 6px; align-content: start; }
 .move-list .num { color: var(--text-faint); font-size: 13px; padding: 3px 0; font-variant-numeric: tabular-nums; }
 .move-item {
   display: flex; align-items: center; gap: 6px;

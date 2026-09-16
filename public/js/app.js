@@ -596,6 +596,18 @@ function openGame(game, backHref) {
     renderPlayerStrips();
   };
   document.getElementById('btn-analyse').onclick = runAnalysis;
+  for (const tab of document.querySelectorAll('.tab')) tab.addEventListener('click', () => showTab(tab.dataset.tab));
+}
+
+/** The side column has two tabs: the moves (with the engine lines) and the report. */
+function showTab(name) {
+  for (const tab of document.querySelectorAll('.tab')) {
+    const on = tab.dataset.tab === name;
+    tab.classList.toggle('on', on);
+    tab.setAttribute('aria-selected', on ? 'true' : 'false');
+  }
+  for (const panel of document.querySelectorAll('.tab-panel')) panel.classList.toggle('hidden', panel.id !== 'tab-' + name);
+  if (name === 'moves') highlightCurrentMove();
 }
 
 function renderGameHead() {
@@ -1202,7 +1214,16 @@ function highlightCurrentMove() {
   for (const el of document.querySelectorAll('.move-item')) {
     const on = Number(el.dataset.ply) === state.cursor;
     el.classList.toggle('current', on);
-    if (on) el.scrollIntoView({ block: 'nearest' });
+    // Scroll the list itself, not scrollIntoView: that would also drag the side
+    // column and the page along with it.
+    if (on) {
+      const list = el.parentElement;
+      const top = el.offsetTop;
+      const bottom = top + el.offsetHeight;
+      if (top < list.scrollTop || bottom > list.scrollTop + list.clientHeight) {
+        list.scrollTop = Math.max(0, top - list.clientHeight / 2);
+      }
+    }
   }
 }
 
@@ -1292,7 +1313,7 @@ function cancelAutoplay() {
 
 async function runAnalysis() {
   const button = document.getElementById('btn-analyse');
-  const depth = Number(document.getElementById('depth-select').value);
+  const depth = Number(document.getElementById('depth-select').value) || 16;
   const progress = document.getElementById('progress');
   const fill = progress.querySelector('.progress-fill');
   const label = progress.querySelector('.progress-text');
@@ -1338,6 +1359,7 @@ async function runAnalysis() {
     renderReview();
     if (state.live) state.live.resume();
     goTo(state.cursor);
+    showTab('report'); // the recap is what was asked for; the moves are one click away
   } catch (err) {
     if (state.live) state.live.resume();
     progress.classList.add('hidden');

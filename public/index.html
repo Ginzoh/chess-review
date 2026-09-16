@@ -180,20 +180,28 @@
           </div>
         </div>
 
-        <div class="card engine-card" id="engine-card"></div>
-
-        <div id="summary-slot"></div>
-
-        <div class="card moves-card">
-          <div class="moves-head">
-            <h3>Moves</h3>
-            <div class="perspective hidden" id="perspective"></div>
-          </div>
-          <div id="graph-slot"></div>
-          <ol class="move-list" id="move-list"></ol>
+        <div class="tabs" role="tablist">
+          <button class="tab on" type="button" role="tab" data-tab="moves" aria-selected="true">Moves</button>
+          <button class="tab" type="button" role="tab" data-tab="report" aria-selected="false">Report</button>
         </div>
 
-        <div id="review-slot"></div>
+        <div class="tab-panel" id="tab-moves" role="tabpanel">
+          <div class="card engine-card" id="engine-card"></div>
+
+          <div class="card moves-card">
+            <div class="moves-head">
+              <h3>Moves</h3>
+            </div>
+            <div id="graph-slot"></div>
+            <ol class="move-list" id="move-list"></ol>
+          </div>
+        </div>
+
+        <div class="tab-panel hidden" id="tab-report" role="tabpanel">
+          <div class="perspective hidden" id="perspective"></div>
+          <div id="summary-slot"><div class="card"><p class="muted">Run the review to see accuracy, the move breakdown and the written report here.</p></div></div>
+          <div id="review-slot"></div>
+        </div>
       </div>
     </div>
   </section>

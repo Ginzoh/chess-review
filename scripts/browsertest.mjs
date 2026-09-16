@@ -152,6 +152,7 @@ try {
 
   check('engine badge shows the build', /Stockfish/.test(await evaluate('document.getElementById("engine-badge").textContent')),
     await evaluate('document.getElementById("engine-badge").textContent'));
+  check('the review opens the Report tab', (await evaluate('document.querySelector(".tab.on").dataset.tab')) === 'report');
   check('accuracy shown for both players', (await evaluate('document.querySelectorAll(".accuracy-box .value").length')) === 2);
   const accuracies = await evaluate('Array.from(document.querySelectorAll(".accuracy-box .value")).map(e => e.textContent)');
   check('accuracies are numbers', accuracies.every((a) => /^\d+(\.\d+)?$/.test(a)), JSON.stringify(accuracies));
@@ -307,6 +308,7 @@ try {
   check('badge and move list agree on the label', badge.indexOf(lastTo.replace('sym ', '')) !== -1, badge + ' vs ' + lastTo);
 
   console.log('\n6d. Engine lines follow the board');
+  await evaluate('document.querySelector(".tab[data-tab=moves]").click()'); // the review left us on Report
   await waitFor('document.querySelectorAll("#engine-lines .engine-line").length >= 2', 90000, 'engine lines');
   const firstLine = await evaluate('document.querySelector("#engine-lines .engine-line").innerText.replace(/\\n/g, " ")');
   check('three lines with an evaluation and a continuation', /^[+-]?(\d+\.\d\d|M\d+) \d+\.(\.\.)? \w/.test(firstLine), firstLine);
@@ -365,6 +367,23 @@ try {
   check('Escape returns to the game position', await evaluate(`!!document.querySelector('[data-square="e2"] .piece') && document.querySelectorAll(".move-item.current").length === 0`));
   await evaluate('document.getElementById("btn-last").click()');
   check('the game position is intact afterwards', (await evaluate('document.querySelectorAll(".move-item.current").length')) === 1);
+
+  console.log('\n6f. Moves and Report tabs');
+  await evaluate('document.querySelector(".tab[data-tab=report]").click()');
+  check('the Report tab shows the recap and hides the moves',
+    await evaluate('!document.getElementById("tab-report").classList.contains("hidden") && document.getElementById("tab-moves").classList.contains("hidden")'));
+  check('the recap holds the accuracy boxes and the written review',
+    await evaluate('document.getElementById("tab-report").contains(document.querySelector(".accuracy-box")) && document.getElementById("tab-report").contains(document.querySelector("#review-slot .finding"))'));
+  // The board must stay put however far the side column is scrolled.
+  const boardTopBefore = await evaluate('Math.round(document.getElementById("board").getBoundingClientRect().top)');
+  await evaluate('document.querySelector(".side-column").scrollTop = 100000');
+  const boardTopAfter = await evaluate('Math.round(document.getElementById("board").getBoundingClientRect().top)');
+  check('scrolling the report leaves the board where it is', boardTopBefore === boardTopAfter && boardTopAfter >= 0, boardTopBefore + ' -> ' + boardTopAfter);
+  check('the tab bar stays reachable while scrolled', (await evaluate('document.querySelector(".tabs").getBoundingClientRect().top')) >= 0);
+  await evaluate('document.querySelector(".tab[data-tab=moves]").click()');
+  check('the Moves tab brings back the list and the engine lines',
+    await evaluate('!document.getElementById("tab-moves").classList.contains("hidden") && document.getElementById("tab-moves").contains(document.getElementById("move-list")) && document.getElementById("tab-moves").contains(document.getElementById("engine-card"))'));
+  check('the current move is scrolled into view inside the list', await evaluate(`(function(){const el=document.querySelector('.move-item.current'); const l=el.parentElement; const t=el.offsetTop; return t >= l.scrollTop && t + el.offsetHeight <= l.scrollTop + l.clientHeight;})()`));
 
   console.log('\n7. Pasted PGN (the route for games against bots)');
   const botPgn = [

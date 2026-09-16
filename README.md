@@ -71,6 +71,11 @@ returns you to where you branched off. Playing a move from the middle of a varia
 discards what came after it, as on Lichess. The move list keeps marking the game position
 you left from.
 
+**Two tabs beside the board.** The right-hand column is split into **Moves** (engine
+lines, evaluation graph, move list) and **Report** (accuracy, the move breakdown and the
+written review), and scrolls on its own, so the board never leaves the screen however
+long the report is. Finishing a review opens the Report tab.
+
 **Engine lines** — the top three lines for whatever is on the board, with an evaluation
 and the continuation, deepening live (the panel shows the depth reached). Every move in a
 line is clickable and plays the line up to that point as a variation. This runs from the
