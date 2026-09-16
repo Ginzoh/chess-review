@@ -1,0 +1,17 @@
+{
+  "name": "chess-review",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Search a Chess.com username, browse their games, and get a full engine-backed review of any game.",
+  "main": "server.js",
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "chess.js": "1.4.0",
+    "cm-chessboard": "8.13.0",
+    "stockfish": "18.0.8"
+  }
+}

@@ -1,0 +1,410 @@
+[
+ {
+  "rating": 3009,
+  "mine": 70.98,
+  "theirs": 79.74,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 3367,
+  "mine": 97.87,
+  "theirs": 98.36,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 1279,
+  "mine": 75.01,
+  "theirs": 73.66,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 1266,
+  "mine": 93.22,
+  "theirs": 92.54,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 3159,
+  "mine": 97.24,
+  "theirs": 100,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 3286,
+  "mine": 95.64,
+  "theirs": 100,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 3048,
+  "mine": 97.93,
+  "theirs": 100,
+  "timeClass": "bullet"
+ },
+ {
+  "rating": 3001,
+  "mine": 66.52,
+  "theirs": 69.78,
+  "timeClass": "bullet"
+ },
+ {
+  "rating": 3047,
+  "mine": 63.26,
+  "theirs": 72.8,
+  "timeClass": "bullet"
+ },
+ {
+  "rating": 2907,
+  "mine": 99.59,
+  "theirs": 100,
+  "timeClass": "bullet"
+ },
+ {
+  "rating": 3067,
+  "mine": 98.21,
+  "theirs": 100,
+  "timeClass": "bullet"
+ },
+ {
+  "rating": 2962,
+  "mine": 61.25,
+  "theirs": 56.3,
+  "timeClass": "bullet"
+ },
+ {
+  "rating": 1824,
+  "mine": 73.12,
+  "theirs": 66.02,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 1746,
+  "mine": 92.16,
+  "theirs": 86.63,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 1873,
+  "mine": 96.36,
+  "theirs": 99.63,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 1820,
+  "mine": 71.52,
+  "theirs": 64,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 649,
+  "mine": 98.15,
+  "theirs": 98.49,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 622,
+  "mine": 72.81,
+  "theirs": 43.79,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 400,
+  "mine": 64.35,
+  "theirs": 60.82,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 200,
+  "mine": 39.26,
+  "theirs": 40.98,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 200,
+  "mine": 81.63,
+  "theirs": 69.91,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 400,
+  "mine": 89.97,
+  "theirs": 83.63,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 200,
+  "mine": 76.5,
+  "theirs": 55.87,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 400,
+  "mine": 91.55,
+  "theirs": 77.88,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 1083,
+  "mine": 66.45,
+  "theirs": 74.96,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 1097,
+  "mine": 83.94,
+  "theirs": 71.24,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 1133,
+  "mine": 91.63,
+  "theirs": 85.41,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 1096,
+  "mine": 60.17,
+  "theirs": 57.94,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 642,
+  "mine": 81.73,
+  "theirs": 70.35,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 900,
+  "mine": 74.92,
+  "theirs": 58.48,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 337,
+  "mine": 37.21,
+  "theirs": 53.62,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 336,
+  "mine": 72.76,
+  "theirs": 62.77,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 1337,
+  "mine": 91.23,
+  "theirs": 77.5,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 1332,
+  "mine": 51.49,
+  "theirs": 30.58,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 389,
+  "mine": 94.39,
+  "theirs": 87.23,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 376,
+  "mine": 73.29,
+  "theirs": 55.2,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 408,
+  "mine": 91.5,
+  "theirs": 89.21,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 401,
+  "mine": 67.81,
+  "theirs": 53.05,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 268,
+  "mine": 85.74,
+  "theirs": 76.27,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 265,
+  "mine": 45.14,
+  "theirs": 34.38,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 267,
+  "mine": 69.71,
+  "theirs": 57.21,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 263,
+  "mine": 76.42,
+  "theirs": 65.49,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 265,
+  "mine": 52.03,
+  "theirs": 51.64,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 276,
+  "mine": 86.23,
+  "theirs": 81.16,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 264,
+  "mine": 93.16,
+  "theirs": 93.95,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 226,
+  "mine": 54.85,
+  "theirs": 37.84,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 262,
+  "mine": 62.63,
+  "theirs": 62.34,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 258,
+  "mine": 47.4,
+  "theirs": 16.3,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 900,
+  "mine": 82.13,
+  "theirs": 63.26,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 172,
+  "mine": 88.32,
+  "theirs": 75.57,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 236,
+  "mine": 93.89,
+  "theirs": 95.22,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 192,
+  "mine": 70.59,
+  "theirs": 51.59,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 136,
+  "mine": 69.25,
+  "theirs": 47.26,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 149,
+  "mine": 65.1,
+  "theirs": 61.61,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 740,
+  "mine": 91.39,
+  "theirs": 78.91,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 1200,
+  "mine": 83.5,
+  "theirs": 67.65,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 290,
+  "mine": 71.68,
+  "theirs": 57.1,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 298,
+  "mine": 98.54,
+  "theirs": 100,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 334,
+  "mine": 66.79,
+  "theirs": 39.85,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 347,
+  "mine": 84.4,
+  "theirs": 69.97,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 458,
+  "mine": 83.49,
+  "theirs": 82.83,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 427,
+  "mine": 59.56,
+  "theirs": 43.79,
+  "timeClass": "rapid"
+ },
+ {
+  "rating": 559,
+  "mine": 45.29,
+  "theirs": 36.93,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 100,
+  "mine": 40.95,
+  "theirs": 35.43,
+  "timeClass": "daily"
+ },
+ {
+  "rating": 526,
+  "mine": 88.47,
+  "theirs": 80.68,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 489,
+  "mine": 48.94,
+  "theirs": 71.53,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 484,
+  "mine": 86.55,
+  "theirs": 79.28,
+  "timeClass": "blitz"
+ },
+ {
+  "rating": 478,
+  "mine": 48.53,
+  "theirs": 63.49,
+  "timeClass": "blitz"
+ }
+]

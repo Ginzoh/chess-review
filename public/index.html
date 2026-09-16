@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Review</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♞</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#/">
+    <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><use href="#wn"></use></svg>
+    <span>Chess Review</span>
+  </a>
+  <form id="search-form" class="search">
+    <input id="search-input" type="text" placeholder="Chess.com username" autocomplete="off" spellcheck="false" aria-label="Chess.com username">
+    <button type="submit">Search</button>
+  </form>
+  <div id="engine-badge" class="engine-badge" title="Analysis runs locally in your browser">Engine idle</div>
+</header>
+
+<main id="view"></main>
+
+<!-- ------------------------------- templates ------------------------------- -->
+
+<template id="tpl-home">
+  <section class="home">
+    <div class="hero">
+      <p class="eyebrow">Stockfish 18 · runs in your browser</p>
+      <h1>Review any Chess.com game</h1>
+      <p class="lede">
+        Search a username, pick a game, and get a full engine review: what you played well,
+        where it went wrong, and the move you should have found instead.
+      </p>
+      <form class="search big" id="home-search">
+        <input type="text" placeholder="e.g. hikaru" autocomplete="off" spellcheck="false" aria-label="Chess.com username">
+        <button type="submit">Find games</button>
+      </form>
+      <div class="suggestions">
+        <span>Try:</span>
+        <button class="chip" data-user="hikaru">hikaru</button>
+        <button class="chip" data-user="magnuscarlsen">magnuscarlsen</button>
+        <button class="chip" data-user="fabianocaruana">fabianocaruana</button>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="feature-icon">⚑</div>
+        <h3>Every move graded</h3>
+        <p>Brilliant through Blunder, with the evaluation before and after, and a plain-English
+          reason grounded in the position.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">◎</div>
+        <h3>A written report</h3>
+        <p>What you did well, the mistakes you keep repeating, the moments the game turned,
+          and how you used the clock.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⌾</div>
+        <h3>Private by default</h3>
+        <p>The engine is WebAssembly running locally. Nothing leaves your machine except the
+          public API call that fetches the game.</p>
+      </div>
+    </div>
+
+    <section class="pgn-panel" id="pgn-panel">
+      <h2>Or paste a PGN — the only way to review games against bots</h2>
+      <p class="muted">
+        Chess.com's public API does not publish games played against its bots, so username search
+        cannot find them. Open the bot game on Chess.com, use <strong>Share → PGN</strong> (or the
+        download button in your archive), and paste it here. Multi-game PGNs work too.
+      </p>
+      <textarea id="pgn-input" rows="7" spellcheck="false"
+        placeholder="[Event &quot;Computer Opponent&quot;]&#10;[White &quot;you&quot;]&#10;[Black &quot;Martin&quot;]&#10;&#10;1. e4 e5 2. Nf3 ..."></textarea>
+      <div class="pgn-actions">
+        <button type="button" id="pgn-go" class="primary">Review this PGN</button>
+        <span class="pgn-error" id="pgn-error"></span>
+      </div>
+    </section>
+  </section>
+</template>
+
+<template id="tpl-pgn-list">
+  <section class="player-page single">
+    <div class="games-panel card">
+      <div class="games-head">
+        <h2>Pasted games</h2>
+        <a class="back" href="#/">← Paste a different PGN</a>
+      </div>
+      <div id="games-list" class="games-list"></div>
+    </div>
+  </section>
+</template>
+
+<template id="tpl-player">
+  <section class="player-page">
+    <div class="profile card" id="profile"></div>
+    <div class="games-panel card">
+      <div class="games-head">
+        <h2>Games</h2>
+        <div class="games-controls">
+          <a class="pgn-button" href="#/">+ Paste a PGN (bot games)</a>
+          <label>Month
+            <select id="month-select"></select>
+          </label>
+          <label>Type
+            <select id="class-filter">
+              <option value="">All</option>
+              <option value="bullet">Bullet</option>
+              <option value="blitz">Blitz</option>
+              <option value="rapid">Rapid</option>
+              <option value="daily">Daily</option>
+            </select>
+          </label>
+          <label>Result
+            <select id="result-filter">
+              <option value="">All</option>
+              <option value="win">Wins</option>
+              <option value="loss">Losses</option>
+              <option value="draw">Draws</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="games-list" class="games-list"></div>
+    </div>
+  </section>
+</template>
+
+<template id="tpl-review">
+  <section class="review-page">
+    <a class="back" id="back-link" href="#">← Back to games</a>
+
+    <div class="review-grid">
+      <div class="board-column">
+        <div class="player-strip" id="strip-top"></div>
+        <div class="board-wrap">
+          <div class="evalbar" id="evalbar"><div class="evalbar-fill"></div><span class="evalbar-text"></span></div>
+          <div id="board"></div>
+        </div>
+        <div class="player-strip" id="strip-bottom"></div>
+
+        <div class="controls">
+          <div class="board-themes" id="board-themes" title="Board colours"></div>
+          <button id="btn-first" title="First move (Home)">⏮</button>
+          <button id="btn-prev" title="Previous move (←)">◀</button>
+          <button id="btn-next" title="Next move (→)">▶</button>
+          <button id="btn-last" title="Last move (End)">⏭</button>
+          <button id="btn-flip" title="Flip board (F)">⇅</button>
+        </div>
+
+        <div class="move-note card" id="move-note">
+          <p class="muted">Run the review to see move-by-move commentary.</p>
+        </div>
+      </div>
+
+      <div class="side-column">
+        <div class="card game-head" id="game-head"></div>
+
+        <div class="card analysis-card" id="analysis-card">
+          <div class="analysis-setup" id="analysis-setup">
+            <label>Depth
+              <select id="depth-select">
+                <option value="12">Fast (depth 12)</option>
+                <option value="16" selected>Balanced (depth 16)</option>
+                <option value="20">Deep (depth 20)</option>
+              </select>
+            </label>
+            <button id="btn-analyse" class="primary">Review this game</button>
+          </div>
+          <div class="progress hidden" id="progress">
+            <div class="progress-bar"><div class="progress-fill"></div></div>
+            <div class="progress-text"></div>
+          </div>
+        </div>
+
+        <div id="summary-slot"></div>
+
+        <div class="card moves-card">
+          <div class="moves-head">
+            <h3>Moves</h3>
+            <div class="perspective hidden" id="perspective"></div>
+          </div>
+          <div id="graph-slot"></div>
+          <ol class="move-list" id="move-list"></ol>
+        </div>
+
+        <div id="review-slot"></div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

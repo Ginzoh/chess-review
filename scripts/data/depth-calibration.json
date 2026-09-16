@@ -1,0 +1,421 @@
+{
+ "12": {
+  "n": 68,
+  "meanDiff": 1.08,
+  "slope": 0.9476,
+  "intercept": 2.577,
+  "correlation": 0.8704,
+  "seconds": 131,
+  "pairs": [
+   {
+    "mine": 81.74527426446284,
+    "theirs": 85.65,
+    "rating": 376,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 36.994772626340776,
+    "theirs": 59.46,
+    "rating": 362,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 46.66064538629807,
+    "theirs": 44.19,
+    "rating": 760,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 80.5405760737162,
+    "theirs": 74.05,
+    "rating": 305,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 77.0934878718888,
+    "theirs": 67.92,
+    "rating": 2848,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 85.45326387721312,
+    "theirs": 78.5,
+    "rating": 2783,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 57.16745374622863,
+    "theirs": 67.58,
+    "rating": 3091,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 96.50101211492144,
+    "theirs": 100,
+    "rating": 3181,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 96.0003451034912,
+    "theirs": 100,
+    "rating": 3077,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 97.05763993328023,
+    "theirs": 100,
+    "rating": 2986,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 65.96949017888761,
+    "theirs": 49.34,
+    "rating": 724,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 83.79135452382226,
+    "theirs": 87.19,
+    "rating": 732,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 86.05466254165646,
+    "theirs": 79.39,
+    "rating": 404,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 67.24054115335875,
+    "theirs": 54.21,
+    "rating": 382,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 78.14150817393295,
+    "theirs": 76.29,
+    "rating": 301,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 56.142327897991066,
+    "theirs": 61.52,
+    "rating": 274,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 93.95685435802974,
+    "theirs": 100,
+    "rating": 927,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 52.79656139846631,
+    "theirs": 65.66,
+    "rating": 521,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 68.50681486122,
+    "theirs": 64.05,
+    "rating": 242,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 70.97152023790912,
+    "theirs": 67.39,
+    "rating": 241,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 96.31239247682136,
+    "theirs": 100,
+    "rating": 615,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 58.39288459340649,
+    "theirs": 45.5,
+    "rating": 608,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 91.83960528166303,
+    "theirs": 84.15,
+    "rating": 562,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 60.234183699265,
+    "theirs": 38.24,
+    "rating": 542,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 78.57672197995252,
+    "theirs": 78.93,
+    "rating": 1023,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 57.935416041732324,
+    "theirs": 47.6,
+    "rating": 1160,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 89.0453444806481,
+    "theirs": 95.19,
+    "rating": 641,
+    "timeClass": "bullet"
+   },
+   {
+    "mine": 90.54278499443815,
+    "theirs": 94.98,
+    "rating": 662,
+    "timeClass": "bullet"
+   },
+   {
+    "mine": 28.148164260756847,
+    "theirs": 30.43,
+    "rating": 1100,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 49.52848171582495,
+    "theirs": 55.52,
+    "rating": 926,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 36.45628394455329,
+    "theirs": 64.33,
+    "rating": 791,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 30.304011960353304,
+    "theirs": 48.52,
+    "rating": 795,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 92.06331353356933,
+    "theirs": 92.44,
+    "rating": 210,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 50.964959211524786,
+    "theirs": 42.89,
+    "rating": 101,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 51.70008759024397,
+    "theirs": 38.06,
+    "rating": 253,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 89.66553185986868,
+    "theirs": 88.45,
+    "rating": 270,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 86.24131882790797,
+    "theirs": 84.92,
+    "rating": 141,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 61.91777970328778,
+    "theirs": 55.26,
+    "rating": 116,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 96.16461615474562,
+    "theirs": 100,
+    "rating": 686,
+    "timeClass": "bullet"
+   },
+   {
+    "mine": 97.89988439999999,
+    "theirs": 100,
+    "rating": 733,
+    "timeClass": "bullet"
+   },
+   {
+    "mine": 76.01547706649085,
+    "theirs": 72.67,
+    "rating": 377,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 32.56186674864004,
+    "theirs": 43.4,
+    "rating": 365,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 74.30206688109044,
+    "theirs": 63.77,
+    "rating": 1204,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 94.13974171685524,
+    "theirs": 94.25,
+    "rating": 1099,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 91.91540533120562,
+    "theirs": 97.67,
+    "rating": 160,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 58.554575837228256,
+    "theirs": 47.31,
+    "rating": 134,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 58.09598470818615,
+    "theirs": 68.27,
+    "rating": 567,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 88.9745056421873,
+    "theirs": 92.96,
+    "rating": 602,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 93.68888727685864,
+    "theirs": 89.77,
+    "rating": 704,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 65.66853029499643,
+    "theirs": 50.78,
+    "rating": 680,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 97.89988439999999,
+    "theirs": 98.35,
+    "rating": 590,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 75.12864797906023,
+    "theirs": 69.52,
+    "rating": 589,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 60.64851199147864,
+    "theirs": 51.32,
+    "rating": 200,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 40.20068836517558,
+    "theirs": 7.34,
+    "rating": 100,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 47.09558551898688,
+    "theirs": 76.24,
+    "rating": 647,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 88.04431807405521,
+    "theirs": 88.65,
+    "rating": 672,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 20.963371189098677,
+    "theirs": 18.62,
+    "rating": 539,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 69.63396823084075,
+    "theirs": 53.95,
+    "rating": 573,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 52.25584220112968,
+    "theirs": 57.51,
+    "rating": 100,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 57.26262572295991,
+    "theirs": 46.54,
+    "rating": 153,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 80.7097751696466,
+    "theirs": 63.75,
+    "rating": 171,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 53.446162686257026,
+    "theirs": 29.39,
+    "rating": 133,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 64.38260580634517,
+    "theirs": 48.91,
+    "rating": 363,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 26.1776686265226,
+    "theirs": 42.78,
+    "rating": 329,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 91.72720043518373,
+    "theirs": 100,
+    "rating": 126,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 93.20877025603008,
+    "theirs": 100,
+    "rating": 156,
+    "timeClass": "blitz"
+   },
+   {
+    "mine": 74.975421034659,
+    "theirs": 76.47,
+    "rating": 312,
+    "timeClass": "rapid"
+   },
+   {
+    "mine": 45.89899997626415,
+    "theirs": 54.92,
+    "rating": 275,
+    "timeClass": "rapid"
+   }
+  ],
+  "residualRmse": 11.24
+ }
+}
