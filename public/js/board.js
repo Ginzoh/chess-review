@@ -11,7 +11,7 @@ const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
  * once and each square references a piece by id, so the board is real vector art
  * rather than outlined text glyphs.
  */
-const SPRITE_URL = '/assets/pieces.svg';
+const SPRITE_URL = new URL('../assets/pieces.svg', import.meta.url).href;
 const SPRITE_ID = 'piece-sprite';
 
 export async function loadPieceSprite() {

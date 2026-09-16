@@ -10,6 +10,7 @@ import { buildReview, explainMove, formatCp, formatSeconds, advantagePhrase, whi
 import { Chess } from './chessutils.js';
 import { estimateRating, ratingTooltip, unavailableReason } from './rating.js';
 import { coachMove } from './coach.js';
+import { STATIC_HOST } from './config.js';
 
 const view = document.getElementById('view');
 const engineBadge = document.getElementById('engine-badge');
@@ -356,6 +357,8 @@ function renderProfile(root, player, stats) {
 
   if (player.avatar) {
     const img = document.createElement('img');
+    // Avatars are served with a restrictive CORP header; a CORS request gets past it.
+    if (STATIC_HOST) img.crossOrigin = 'anonymous';
     img.src = api.proxiedImage(player.avatar);
     img.alt = '';
     root.appendChild(img);
@@ -1318,5 +1321,5 @@ async function watchBuild() {
 
 // The piece sprite has to be in the document before any board is drawn.
 await loadPieceSprite().catch((err) => console.error(err));
-watchBuild();
+if (!STATIC_HOST) watchBuild();
 route();

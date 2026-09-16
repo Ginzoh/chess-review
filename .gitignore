@@ -3,3 +3,4 @@ node_modules/
 shot-*.png
 *.log
 .DS_Store
+dist/

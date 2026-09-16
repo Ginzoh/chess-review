@@ -1,6 +1,9 @@
 /**
- * Thin client for the Chess.com published-data API, via our own proxy at /api/chess/.
+ * Thin client for the Chess.com published-data API - via our own proxy at /api/chess/
+ * when the local server is running, straight to api.chess.com on a static host.
  */
+
+import { STATIC_HOST } from './config.js';
 
 const DRAW_RESULTS = new Set(['agreed', 'repetition', 'stalemate', 'insufficient', 'timevsinsufficient', '50move']);
 
@@ -23,7 +26,9 @@ const TERMINATION_TEXT = {
 };
 
 async function get(path) {
-  const res = await fetch('/api/chess/' + path, { headers: { Accept: 'application/json' } });
+  // Chess.com's public API allows cross-origin reads, so a static host can skip the proxy.
+  const base = STATIC_HOST ? 'https://api.chess.com/pub/' : '/api/chess/';
+  const res = await fetch(base + path, { headers: { Accept: 'application/json' } });
   if (res.status === 404) {
     const err = new Error('Not found');
     err.code = 404;
@@ -80,6 +85,7 @@ export function formatTimeControl(tc) {
 
 export function proxiedImage(url) {
   if (!url) return null;
+  if (STATIC_HOST) return url;
   return '/api/img?u=' + encodeURIComponent(url);
 }
 

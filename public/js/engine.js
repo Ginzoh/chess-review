@@ -6,8 +6,9 @@
  * real threads; otherwise we fall back to the single-threaded build.
  */
 
-const MT_BUILD = '/engine/stockfish-18-lite.js';
-const ST_BUILD = '/engine/stockfish-18-lite-single.js';
+// Relative to this module so the app works from a sub-path (e.g. GitHub Pages).
+const MT_BUILD = new URL('../engine/stockfish-18-lite.js', import.meta.url).href;
+const ST_BUILD = new URL('../engine/stockfish-18-lite-single.js', import.meta.url).href;
 
 export class Engine {
   constructor() {

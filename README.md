@@ -27,6 +27,18 @@ Then open <http://localhost:5173>.
 
 Search a username (try `hikaru`), pick a month, click a game, and press **Review this game**.
 
+## Online version
+
+The app is also published at <https://ginzoh.github.io/chess-review/> — every push to
+`main` rebuilds and redeploys it (`.github/workflows/pages.yml`). Nothing runs on a
+server there: the engine is WebAssembly in your browser, Chess.com's public API allows
+cross-origin reads so the front end calls it directly, and a small service worker
+(`public/coi.js`) adds the cross-origin-isolation headers a static host cannot, so the
+multi-threaded engine still works. `scripts/build-static.mjs` assembles the build
+(copies `public/`, the Stockfish files, and flips `public/js/config.js` to static mode);
+`scripts/statictest.mjs` serves that build the way GitHub Pages does — plain files,
+under a sub-path, no headers — and drives it in a headless browser.
+
 ## Games against bots
 
 Chess.com's public API does **not** publish games played against its bots. They live in a
@@ -223,6 +235,7 @@ node scripts/ratingtest.mjs            # "played like" estimator: per-band bias 
 node scripts/conceptstest.mjs          # pin/skewer/back-rank/overload detectors on known positions
 node scripts/coachtest.mjs             # the Explain panel over fixture games, incl. legality of every line
 node scripts/browsertest.mjs           # drives the real UI in headless Edge/Chrome
+node scripts/statictest.mjs            # the GitHub Pages build: sub-path, no headers, service worker
 node scripts/contrast.mjs              # WCAG contrast of every text style on the review page
 node scripts/screenshot.mjs            # writes shot-*.png of each screen
 ```
